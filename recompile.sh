@@ -3,11 +3,11 @@ cd orangefs-2.9.3/
 make -j8 && make install
 cd ..
 
-cd mpich-3.0.2/
-make -j8 && make install
-cd ..
+#cd mpich-3.0.2/
+#make -j8 && make install
+#cd ..
 
-cd IOR/
-make clean
-gmake mpiio
-cd ..
+#cd IOR/
+#make clean
+#gmake mpiio
+#cd ..

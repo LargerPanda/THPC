@@ -10,6 +10,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdlib.h>
+
+//syslog.h for logging
+#include <syslog.h>
+#define  WRITE_MYLOG
+
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -71,6 +76,13 @@ extern gen_mutex_t dbpf_completion_queue_array_mutex[TROVE_MAX_CONTEXTS];
 
 static void aio_progress_notification(union sigval sig)
 {
+#ifdef WRITE_MYLOG
+    openlog("MyLog", LOG_CONS | LOG_PID, LOG_LOCAL2);
+    syslog(LOG_INFO,
+         "into function aio_progress_notification\n");
+    closelog();
+#endif
+
     dbpf_queued_op_t *cur_op = NULL;
     struct dbpf_op *op_p = NULL;
     int ret, i, aiocb_inuse_count, state = 0;
@@ -157,10 +169,10 @@ static void aio_progress_notification(union sigval sig)
             /* calculate end of request */
             for(j=0; j<op_p->u.b_rw_list.stream_array_count; j++)
             {
-                if(eor < op_p->u.b_rw_list.stream_offset_array[j] + 
+                if(eor < op_p->u.b_rw_list.stream_offset_array[j] +
                     op_p->u.b_rw_list.stream_size_array[j])
                 {
-                    eor = op_p->u.b_rw_list.stream_offset_array[j] + 
+                    eor = op_p->u.b_rw_list.stream_offset_array[j] +
                         op_p->u.b_rw_list.stream_size_array[j];
                 }
             }
@@ -198,7 +210,7 @@ error_in_cleanup:
 
         dbpf_open_cache_put(&op_p->u.b_rw_list.open_ref);
         op_p->u.b_rw_list.fd = -1;
-        
+
 	cur_op->state = ret;
         /* this is a macro defined in dbpf-thread.h */
 
@@ -206,7 +218,7 @@ error_in_cleanup:
         {
             int outcount;
 
-            gossip_debug(GOSSIP_TROVE_DEBUG, 
+            gossip_debug(GOSSIP_TROVE_DEBUG,
                 "aio updating size for handle %llu\n", llu(ref.handle));
 
             /* If we updated the size, then convert cur_op into a setattr.
@@ -253,7 +265,7 @@ error_in_cleanup:
     else
     {
         gossip_debug(GOSSIP_TROVE_DEBUG, "*** issuing more aio requests "
-                     "(state is %s)\n", 
+                     "(state is %s)\n",
                      list_proc_state_strings[
                      op_p->u.b_rw_list.list_proc_state]);
 
@@ -322,6 +334,13 @@ error_in_cleanup:
 
 static void start_delayed_ops_if_any(int dec_first)
 {
+#ifdef WRITE_MYLOG
+    openlog("MyLog", LOG_CONS | LOG_PID, LOG_LOCAL2);
+    syslog(LOG_INFO,
+         "into function start_delayed_ops_if_any");
+    closelog();
+#endif
+
     int ret = 0;
     dbpf_queued_op_t *cur_op = NULL;
     int i = 0, aiocb_inuse_count = 0;
@@ -378,7 +397,7 @@ static void start_delayed_ops_if_any(int dec_first)
         {
 
             gossip_debug(GOSSIP_TROVE_DEBUG,
-                         "lio_listio called with %d following aiocbs:\n", 
+                         "lio_listio called with %d following aiocbs:\n",
                          aiocb_inuse_count);
             for(i=0; i<aiocb_inuse_count; i++)
             {
@@ -386,7 +405,7 @@ static void start_delayed_ops_if_any(int dec_first)
                     GOSSIP_TROVE_DEBUG,
                     "aiocb_ptr_array[%d]: fd: %d, off: %lld, "
                     "bytes: %d, buf: %p, type: %d\n",
-                    i, 
+                    i,
                     aiocb_ptr_array[i]->aio_fildes,
                     lld(aiocb_ptr_array[i]->aio_offset),
                     (int)aiocb_ptr_array[i]->aio_nbytes,
@@ -429,6 +448,13 @@ static int issue_or_delay_io_operation(
     dbpf_queued_op_t *cur_op, struct aiocb **aiocb_ptr_array,
     int aiocb_inuse_count, struct sigevent *sig, int dec_first)
 {
+#ifdef WRITE_MYLOG
+    openlog("MyLog", LOG_CONS | LOG_PID, LOG_LOCAL2);
+    syslog(LOG_INFO,
+       "into function issue_or_delay_io_operation");
+    closelog();
+#endif
+
     int ret = -TROVE_EINVAL, op_delayed = 0;
     int i;
     assert(cur_op);
@@ -557,6 +583,13 @@ int dbpf_bstream_flush(TROVE_coll_id coll_id,
                        TROVE_op_id *out_op_id_p,
                        PVFS_hint  hints)
 {
+#ifdef WRITE_MYLOG
+    openlog("MyLog", LOG_CONS | LOG_PID, LOG_LOCAL2);
+    syslog(LOG_INFO,
+       "into function dbpf_bstream_flush");
+    closelog();
+#endif
+
     dbpf_queued_op_t *q_op_p = NULL;
     struct dbpf_collection *coll_p = NULL;
 
@@ -589,6 +622,13 @@ int dbpf_bstream_flush(TROVE_coll_id coll_id,
 /* returns 1 on completion, -TROVE_errno on error, 0 on not done */
 static int dbpf_bstream_flush_op_svc(struct dbpf_op *op_p)
 {
+  #ifdef WRITE_MYLOG
+      openlog("MyLog", LOG_CONS | LOG_PID, LOG_LOCAL2);
+      syslog(LOG_INFO,
+         "into function dbpf_bstream_flush_op_svc");
+      closelog();
+  #endif
+
     int ret = -TROVE_EINVAL, got_fd = 0;
     struct open_cache_ref tmp_ref;
 
@@ -724,6 +764,13 @@ inline int dbpf_bstream_rw_list(TROVE_coll_id coll_id,
                                 struct dbpf_aio_ops * aio_ops,
                                 PVFS_hint  hints)
 {
+  #ifdef WRITE_MYLOG
+      openlog("MyLog", LOG_CONS | LOG_PID, LOG_LOCAL2);
+      syslog(LOG_INFO,
+         "into function dbpf_bstream_rw_list");
+      closelog();
+  #endif
+
     int ret = -TROVE_EINVAL;
     dbpf_queued_op_t *q_op_p = NULL;
     struct dbpf_collection *coll_p = NULL;
@@ -797,7 +844,7 @@ inline int dbpf_bstream_rw_list(TROVE_coll_id coll_id,
     {
         PVFS_size count_stream = 0;
         count_mem = 0;
-        gossip_debug(GOSSIP_TROVE_DEBUG, 
+        gossip_debug(GOSSIP_TROVE_DEBUG,
                      "dbpf_bstream_rw_list: mem_count: %d, stream_count: %d\n",
                      mem_count,
                      stream_count);
@@ -818,7 +865,7 @@ inline int dbpf_bstream_rw_list(TROVE_coll_id coll_id,
                          lld(stream_offset_array[i]), lld(stream_size_array[i]));
             count_stream += stream_size_array[i];
         }
-        
+
         if(count_mem != count_stream)
         {
             gossip_debug(GOSSIP_TROVE_DEBUG,
@@ -827,7 +874,7 @@ inline int dbpf_bstream_rw_list(TROVE_coll_id coll_id,
                          lld(count_mem), lld(count_stream));
         }
     }
-                         
+
     /* initialize op-specific members */
     q_op_p->op.u.b_rw_list.fd = -1;
     q_op_p->op.u.b_rw_list.opcode = opcode;
@@ -862,8 +909,8 @@ inline int dbpf_bstream_rw_list(TROVE_coll_id coll_id,
     q_op_p->op.u.b_rw_list.list_proc_state = LIST_PROC_INITIALIZED;
 
     ret = dbpf_open_cache_get(
-        coll_id, handle, 
-        (opcode == LIO_WRITE) ? DBPF_FD_BUFFERED_WRITE : DBPF_FD_BUFFERED_READ, 
+        coll_id, handle,
+        (opcode == LIO_WRITE) ? DBPF_FD_BUFFERED_WRITE : DBPF_FD_BUFFERED_READ,
         &q_op_p->op.u.b_rw_list.open_ref);
     if (ret < 0)
     {
@@ -988,6 +1035,13 @@ static int dbpf_bstream_cancel(
     TROVE_op_id cancel_id,
     TROVE_context_id context_id)
 {
+  #ifdef WRITE_MYLOG
+      openlog("MyLog", LOG_CONS | LOG_PID, LOG_LOCAL2);
+      syslog(LOG_INFO,
+         "into function dbpf_bstream_cancel");
+      closelog();
+  #endif
+
     dbpf_queued_op_t *cur_op = NULL;
     int state, ret;
 
@@ -1112,7 +1166,7 @@ static int dbpf_bstream_cancel(
  *   - if not, and we are in the LIST_PROC_ALLPOSTED state,
  *     then we're done!
  *   - otherwise convert some more elements and post them.
- * 
+ *
  */
 #ifndef __PVFS2_TROVE_AIO_THREADED__
 static int dbpf_bstream_rw_list_op_svc(struct dbpf_op *op_p)
@@ -1176,14 +1230,14 @@ static int dbpf_bstream_rw_list_op_svc(struct dbpf_op *op_p)
                               "WRITE" : "READ"), ret,
                              op_p->u.b_rw_list.fd);
 
-                /* aio_return doesn't seem to return bytes read/written if 
-                 * sigev_notify == SIGEV_NONE, so we set the out size 
+                /* aio_return doesn't seem to return bytes read/written if
+                 * sigev_notify == SIGEV_NONE, so we set the out size
                  * from what's requested.  For reads we just leave as zero,
                  * which ends up being OK,
                  * since the amount read (if past EOF its less than requested)
                  * is determined from the bstream size.
                  */
-                if(op_p->type == BSTREAM_WRITE_LIST || 
+                if(op_p->type == BSTREAM_WRITE_LIST ||
                    op_p->type == BSTREAM_WRITE_AT)
                 {
                     *(op_p->u.b_rw_list.out_size_p) += aiocb_p[i].aio_nbytes;
@@ -1251,7 +1305,7 @@ static int dbpf_bstream_rw_list_op_svc(struct dbpf_op *op_p)
         {
             op_p->u.b_rw_list.list_proc_state = LIST_PROC_ALLCONVERTED;
         }
-        
+
         /* mark unused with LIO_NOPs */
         for(i = aiocb_inuse_count;
             i < op_p->u.b_rw_list.aiocb_array_count; i++)
@@ -1294,12 +1348,19 @@ static int dbpf_bstream_rw_list_op_svc(struct dbpf_op *op_p)
 
 inline int dbpf_pread(int fd, void *buf, size_t count, off_t offset)
 {
+  #ifdef WRITE_MYLOG
+      openlog("MyLog", LOG_CONS | LOG_PID, LOG_LOCAL2);
+      syslog(LOG_INFO,
+         "into function dbpf_pread");
+      closelog();
+  #endif
+
     int ret = 0;
     int ret_size = 0;
 
     do
     {
-        ret = pread(fd, ((char *)buf) + ret_size, 
+        ret = pread(fd, ((char *)buf) + ret_size,
                     count - ret_size, offset + ret_size);
         if (ret)
         {
@@ -1316,11 +1377,18 @@ inline int dbpf_pread(int fd, void *buf, size_t count, off_t offset)
 
 inline int dbpf_pwrite(int fd, const void *buf, size_t count, off_t offset)
 {
+  #ifdef WRITE_MYLOG
+      openlog("MyLog", LOG_CONS | LOG_PID, LOG_LOCAL2);
+      syslog(LOG_INFO,
+         "into function dbpf_pwrite");
+      closelog();
+  #endif
+
     int ret = 0;
     int ret_size = 0;
     do
     {
-        ret = pwrite(fd, ((char *)buf) + ret_size, 
+        ret = pwrite(fd, ((char *)buf) + ret_size,
                      count - ret_size, offset + ret_size);
         if (ret)
         {
